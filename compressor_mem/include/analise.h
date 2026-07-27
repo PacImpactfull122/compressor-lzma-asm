@@ -23,7 +23,8 @@ enum metodo {
     METODO_BP = 5,
     METODO_CTX_RANS = 6,
     METODO_ROLZ = 7,
-    METODO_HUFFMAN = 8
+    METODO_HUFFMAN = 8,
+    METODO_MTF = 9
 };
 
 void analisar_bloco(const u8* dados, u32 tam, info_bloco* info);

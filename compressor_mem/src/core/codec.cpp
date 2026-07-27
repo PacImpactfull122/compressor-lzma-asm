@@ -7,6 +7,7 @@
 #include "../../include/rolz.h"
 #include "../../include/huff.h"
 #include "../../include/rans_lz.h"
+#include "../../include/mtf.h"
 #include <cstring>
 #include <algorithm>
 
@@ -73,8 +74,11 @@ std::vector<u8> codec_comp(const u8* dados, u32 tam, u32 nivel) {
             bcomp = rans_lz_comp(tmp.data(), btam, nivel);
         } else if (metodo == METODO_RLE) {
             bcomp = rle_enc(&dados[pos], btam);
-        } else if (metodo == METODO_CTX_RANS) {
+        } else         if (metodo == METODO_CTX_RANS) {
             bcomp = ctx_rans_enc(&dados[pos], btam);
+        } else if (metodo == METODO_MTF) {
+            std::vector<u8> mtf_buf = mtf_enc(&dados[pos], btam);
+            bcomp = rans_lz_comp(mtf_buf.data(), btam, nivel);
         } else if (metodo == METODO_ROLZ) {
             bcomp = rolz_enc(&dados[pos], btam);
         } else if (metodo == METODO_HUFFMAN) {
@@ -137,6 +141,9 @@ std::vector<u8> codec_decomp(const u8* dados, u32 tam, u32 tam_orig) {
             bdec = rle_dec(&dados[pos], bcomp);
         } else if (metodo == METODO_CTX_RANS) {
             bdec = ctx_rans_dec(&dados[pos], bcomp);
+        } else if (metodo == METODO_MTF) {
+            std::vector<u8> lz_dec = rans_lz_decomp(&dados[pos], bcomp, borig);
+            bdec = mtf_dec(lz_dec.data(), borig);
         } else if (metodo == METODO_ROLZ) {
             bdec = rolz_dec(&dados[pos], bcomp);
         } else if (metodo == METODO_HUFFMAN) {

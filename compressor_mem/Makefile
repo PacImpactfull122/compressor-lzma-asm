@@ -9,7 +9,7 @@ ASMDIR = $(SRCDIR)/asm
 INCDIR = include
 BINDIR = bin
 
-CORESRC = $(COREDIR)/lz.cpp $(COREDIR)/rans.cpp $(COREDIR)/bcj.cpp $(COREDIR)/bitplane.cpp $(COREDIR)/codec.cpp $(COREDIR)/analise.cpp $(COREDIR)/rle.cpp $(COREDIR)/delta.cpp $(COREDIR)/huff.cpp $(COREDIR)/ctx_rans.cpp $(COREDIR)/rolz.cpp $(COREDIR)/rans_lz.cpp
+CORESRC = $(COREDIR)/lz.cpp $(COREDIR)/rans.cpp $(COREDIR)/bcj.cpp $(COREDIR)/bitplane.cpp $(COREDIR)/codec.cpp $(COREDIR)/analise.cpp $(COREDIR)/rle.cpp $(COREDIR)/delta.cpp $(COREDIR)/huff.cpp $(COREDIR)/ctx_rans.cpp $(COREDIR)/rolz.cpp $(COREDIR)/rans_lz.cpp $(COREDIR)/mtf.cpp
 ASMSRC = $(ASMDIR)/hash_compare.asm $(ASMDIR)/bt4_search.asm $(ASMDIR)/bt4_opt.asm $(ASMDIR)/rans_simd.asm
 
 COREOBJ = $(CORESRC:.cpp=.o)
