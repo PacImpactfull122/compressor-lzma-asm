@@ -131,9 +131,15 @@ std::vector<u8> codec_decomp(const u8* dados, u32 tam, u32 tam_orig) {
         u32 borig    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
         u32 bcomp    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
 
-        if (pos + bcomp > tam) break;
+        // ! soma em 64 bits, overflow em u32 liberava ponteiro fora do buffer
+        if ((u64)pos + bcomp > tam) break;
+        // * bloco prometendo mais do que falta estouraria a saida
+        if (borig > tam_orig - (u32)resultado.size()) break;
 
         std::vector<u8> bdec;
+
+        // * metodo desconhecido indica bloco corrompido, parar em vez de interpretar
+        if (metodo > METODO_MTF) break;
 
         if (metodo == METODO_STORE) {
             bdec.assign(&dados[pos], &dados[pos] + bcomp);

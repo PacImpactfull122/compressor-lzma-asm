@@ -1,5 +1,6 @@
 #include "include/codec.h"
 #include "include/tipos.h"
+#include "include/config.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -27,10 +28,38 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    fseek(f, 0, SEEK_END);
+    long tam_arquivo = ftell(f);
+    // * posiciona depois do header, o fread dos dados parte daqui
+    fseek(f, (long)sizeof(cab), SEEK_SET);
+
+    // ! campos do header vem do arquivo, validar antes de alocar
+    if (tam_arquivo < (long)sizeof(cab)) {
+        printf("arquivo truncado\n");
+        fclose(f);
+        return 1;
+    }
+    if (h.tam_comp > (u32)(tam_arquivo - (long)sizeof(cab))) {
+        printf("tam_comp invalido: %u\n", h.tam_comp);
+        fclose(f);
+        return 1;
+    }
+    // ! bloco comprimido expande no maximo a bloco_tam, limite folgado contra tam_orig corrompido
+    if ((u64)h.tam_orig > (u64)h.tam_comp * BLOCO_TAM + 1024 * 1024) {
+        printf("tam_orig invalido: %u\n", h.tam_orig);
+        fclose(f);
+        return 1;
+    }
+
     u8* comp = (u8*)malloc(h.tam_comp);
     if (!comp) { printf("sem memoria\n"); fclose(f); return 1; }
 
-    fread(comp, 1, h.tam_comp, f);
+    if (fread(comp, 1, h.tam_comp, f) != h.tam_comp) {
+        printf("arquivo truncado\n");
+        free(comp);
+        fclose(f);
+        return 1;
+    }
     fclose(f);
 
     // ! crc cobre apenas os dados comprimidos, nao o header
@@ -43,6 +72,12 @@ int main(int argc, char** argv) {
 
     auto dec = codec_decomp(comp, h.tam_comp, h.tam_orig);
     free(comp);
+
+    // ! saida menor que o prometido indica bloco corrompido
+    if (dec.size() != h.tam_orig) {
+        printf("dados corrompidos: esperado %u bytes, obtido %zu\n", h.tam_orig, dec.size());
+        return 1;
+    }
 
     FILE* out = fopen(argv[2], "wb");
     if (!out) { printf("erro ao criar %s\n", argv[2]); return 1; }

@@ -54,6 +54,8 @@ Cada bloco: `[metodo: 1 byte] [tam_orig_bloco: 4 bytes] [tam_comp_bloco: 4 bytes
 
 O metodo por bloco e escolhido dinamicamente pela analise de entropia.
 
+O descompressor valida o header contra o tamanho real do arquivo e cada bloco antes de processar, arquivos corrompidos encerram com erro em vez de acessar memoria invalida.
+
 ## Build
 
 Requer `g++`, `nasm`, e suporte a SSE2/AVX2.

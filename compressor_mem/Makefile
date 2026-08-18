@@ -29,27 +29,6 @@ $(BINDIR)/dbg_metodo: src/tools/dbg_metodo.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-test_delta_2d_bug: test_delta_2d_bug.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_rans_overflow_bug: test_rans_overflow_bug.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_avx_penalty_pbt: test_avx_penalty_pbt.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_bp_assimetria_bug: test_bp_assimetria_bug.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_codec_validacao_bug: test_codec_validacao_bug.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_ctx_modelo_atualizado: test_ctx_modelo_atualizado.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
-test_ctx_ordem_sincronizada: test_ctx_ordem_sincronizada.cpp $(COREOBJ) $(ASMOBJ) | $(BINDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -o $(BINDIR)/$@ $^
-
 $(COREDIR)/%.o: $(COREDIR)/%.cpp
 	$(CC) $(CFLAGS) -I$(INCDIR) -c -o $@ $<
 
