@@ -108,6 +108,9 @@ std::vector<u8> rolz_dec(const u8* dados, u32 tam_ent) {
     u32 tam_orig = (ptr[0]<<24)|(ptr[1]<<16)|(ptr[2]<<8)|ptr[3];
     ptr += 4;
 
+    // ! tam_orig vem do stream, limitar para nao alocar demais
+    if (tam_orig == 0 || tam_orig > 64u * 1024u * 1024u) return {};
+
     rolz_ctx ctx;
     rolz_init(&ctx);
 

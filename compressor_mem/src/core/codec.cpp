@@ -10,6 +10,7 @@
 #include "../../include/mtf.h"
 #include <cstring>
 #include <algorithm>
+#include <new>
 
 // * tabela CRC-32 padrao IEEE 802.3, polinomio 0xEDB88320 reversed
 static const u32 tab_crc[256] = {
@@ -121,49 +122,61 @@ std::vector<u8> codec_comp(const u8* dados, u32 tam, u32 nivel) {
 
 std::vector<u8> codec_decomp(const u8* dados, u32 tam, u32 tam_orig) {
     std::vector<u8> resultado;
-    resultado.reserve(tam_orig);
 
-    u32 pos = 0;
-    while (pos < tam && resultado.size() < tam_orig) {
-        if (pos + 9 > tam) break;
+    // ! bloco malformado pode pedir alocacao absurda, bad_alloc vira erro gracioso
+    try {
+        resultado.reserve(tam_orig);
 
-        u32 metodo   = dados[pos++];
-        u32 borig    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
-        u32 bcomp    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
+        u32 pos = 0;
+        while (pos < tam && resultado.size() < tam_orig) {
+            if (pos + 9 > tam) break;
 
-        // ! soma em 64 bits, overflow em u32 liberava ponteiro fora do buffer
-        if ((u64)pos + bcomp > tam) break;
-        // * bloco prometendo mais do que falta estouraria a saida
-        if (borig > tam_orig - (u32)resultado.size()) break;
+            u32 metodo   = dados[pos++];
+            u32 borig    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
+            u32 bcomp    = (dados[pos]<<24)|(dados[pos+1]<<16)|(dados[pos+2]<<8)|dados[pos+3]; pos += 4;
 
-        std::vector<u8> bdec;
+            // ! soma em 64 bits, overflow em u32 liberava ponteiro fora do buffer
+            if ((u64)pos + bcomp > tam) break;
+            // * bloco prometendo mais do que falta estouraria a saida
+            if (borig > tam_orig - (u32)resultado.size()) break;
 
-        // * metodo desconhecido indica bloco corrompido, parar em vez de interpretar
-        if (metodo > METODO_MTF) break;
+            std::vector<u8> bdec;
 
-        if (metodo == METODO_STORE) {
-            bdec.assign(&dados[pos], &dados[pos] + bcomp);
-        } else if (metodo == METODO_RLE) {
-            bdec = rle_dec(&dados[pos], bcomp);
-        } else if (metodo == METODO_CTX_RANS) {
-            bdec = ctx_rans_dec(&dados[pos], bcomp);
-        } else if (metodo == METODO_MTF) {
-            std::vector<u8> lz_dec = rans_lz_decomp(&dados[pos], bcomp, borig);
-            bdec = mtf_dec(lz_dec.data(), borig);
-        } else if (metodo == METODO_ROLZ) {
-            bdec = rolz_dec(&dados[pos], bcomp);
-        } else if (metodo == METODO_HUFFMAN) {
-            bdec = huff_dec(&dados[pos], bcomp);
-        } else if (metodo == METODO_BCJ_LZ) {
-            bdec = rans_lz_decomp(&dados[pos], bcomp, borig);
-            if (bdec.size() == borig)
-                bcj_x86_decode(bdec.data(), borig, (u32)resultado.size());
-        } else {
-            bdec = rans_lz_decomp(&dados[pos], bcomp, borig);
+            // * metodo desconhecido indica bloco corrompido, parar em vez de interpretar
+            if (metodo > METODO_MTF) break;
+
+            if (metodo == METODO_STORE) {
+                bdec.assign(&dados[pos], &dados[pos] + bcomp);
+            } else if (metodo == METODO_RLE) {
+                bdec = rle_dec(&dados[pos], bcomp);
+            } else if (metodo == METODO_CTX_RANS) {
+                bdec = ctx_rans_dec(&dados[pos], bcomp);
+            } else if (metodo == METODO_MTF) {
+                std::vector<u8> lz_dec = rans_lz_decomp(&dados[pos], bcomp, borig);
+                // ! lz_dec pode vir menor que borig, mtf_dec leria fora do buffer
+                if (lz_dec.size() == borig)
+                    bdec = mtf_dec(lz_dec.data(), borig);
+            } else if (metodo == METODO_ROLZ) {
+                bdec = rolz_dec(&dados[pos], bcomp);
+            } else if (metodo == METODO_HUFFMAN) {
+                bdec = huff_dec(&dados[pos], bcomp);
+            } else if (metodo == METODO_BCJ_LZ) {
+                bdec = rans_lz_decomp(&dados[pos], bcomp, borig);
+                if (bdec.size() == borig)
+                    bcj_x86_decode(bdec.data(), borig, (u32)resultado.size());
+            } else {
+                bdec = rans_lz_decomp(&dados[pos], bcomp, borig);
+            }
+
+            // * bloco pode prometer mais do que falta, podar evita estouro da saida
+            if (resultado.size() + bdec.size() > tam_orig)
+                bdec.resize(tam_orig - (u32)resultado.size());
+            resultado.insert(resultado.end(), bdec.begin(), bdec.end());
+            pos += bcomp;
         }
-
-        resultado.insert(resultado.end(), bdec.begin(), bdec.end());
-        pos += bcomp;
+    } catch (const std::bad_alloc&) {
+        // * falha de alocacao em stream corrompido, sem forma de continuar
+        return {};
     }
 
     return resultado;

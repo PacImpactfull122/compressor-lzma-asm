@@ -27,7 +27,8 @@ static u32 hash4(const u8* d, u32 p) {
 // * nivel controla profundidade maxima: nivel*16 descidas na arvore
 // * retorna o match mais longo encontrado
 static match bt4_busca(lz_ctx* ctx, const u8* dados, u32 tam, u32 pos, u32 nivel) {
-    if (pos + MIN_MATCH > tam) return {0, 0};
+    // * a funcao de hash precisa de quatro bytes validos, o minimo de match nao garante isso
+    if (pos + 4 > tam) return {0, 0};
 
     u32 max_len  = std::min(MAX_MATCH, tam - pos);
     u32 melhor_len  = 0;
@@ -93,7 +94,8 @@ match lz_busca(lz_ctx* ctx, const u8* dados, u32 tam, u32 pos, u32 nivel) {
 }
 
 int lz_busca_multi(lz_ctx* ctx, const u8* dados, u32 tam, u32 pos, u32 nivel, match* saida) {
-    if (pos + MIN_MATCH > tam) return 0;
+    // * a funcao de hash precisa de quatro bytes validos, o minimo de match nao garante isso
+    if (pos + 4 > tam) return 0;
 
     u32 max_len  = std::min(MAX_MATCH, tam - pos);
     u32 limite   = nivel * 16;
@@ -170,7 +172,8 @@ int lz_busca_multi(lz_ctx* ctx, const u8* dados, u32 tam, u32 pos, u32 nivel, ma
 }
 
 void lz_ins(lz_ctx* ctx, const u8* dados, u32 tam, u32 pos, u32 len) {
-    for (u32 i = 0; i < len && pos + i + MIN_MATCH <= tam; i++) {
+    // * a funcao de hash precisa de quatro bytes validos, o minimo de match nao garante isso
+    for (u32 i = 0; i < len && pos + i + 4 <= tam; i++) {
         // ! pula posicoes que ja foram inseridas pelo bt4_busca nesta mesma passagem
         if (pos + i == ctx->ultima_bt) continue;
         bt4_busca(ctx, dados, tam, pos + i, 1);

@@ -26,6 +26,9 @@ void bcj_x86_encode(u8* dados, u32 tam, u32 pos) {
             continue;
         }
 
+        // * a consulta da mascara le o ultimo byte do offset, o limite precisa vir antes
+        if (i + 5 > tam) break;
+
         u32 offset = i - prev_pos;
         prev_pos = i;
 
@@ -46,8 +49,6 @@ void bcj_x86_encode(u8* dados, u32 tam, u32 pos) {
                 }
             }
         }
-
-        if (i + 5 > tam) break;
 
         u32 src = dados[i + 1] | (dados[i + 2] << 8) | (dados[i + 3] << 16) | (dados[i + 4] << 24);
         u32 dest = src - (pos + i + 5);
@@ -86,6 +87,9 @@ void bcj_x86_decode(u8* dados, u32 tam, u32 pos) {
             continue;
         }
 
+        // * a consulta da mascara le o ultimo byte do offset, o limite precisa vir antes
+        if (i + 5 > tam) break;
+
         u32 offset = i - prev_pos;
         prev_pos = i;
 
@@ -106,8 +110,6 @@ void bcj_x86_decode(u8* dados, u32 tam, u32 pos) {
                 }
             }
         }
-
-        if (i + 5 > tam) break;
 
         u32 src = dados[i + 1] | (dados[i + 2] << 8) | (dados[i + 3] << 16) | (dados[i + 4] << 24);
         u32 dest = src + (pos + i + 5);

@@ -63,9 +63,10 @@ std::vector<u8> bp_dec(const u8* ent, u32 tam_ent) {
     
     u32 tam_orig = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
     ptr += 4;
-    
-    if (tam_orig == 0) return {};
-    
+
+    // ! tam_orig vem do stream, limitar para nao alocar demais
+    if (tam_orig == 0 || tam_orig > 64u * 1024u * 1024u) return {};
+
     std::vector<u8> res(tam_orig, 0);
     
     for (int p = 0; p < 8; p++) {
@@ -84,7 +85,8 @@ std::vector<u8> bp_dec(const u8* ent, u32 tam_ent) {
         u32 comp_tam = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
         ptr += 4;
         
-        if (ptr + comp_tam > fim) return {};
+        // * comparar em tipo largo evita overflow de ponteiro com comp_tam corrompido
+        if ((u64)comp_tam > (u64)(fim - ptr)) return {};
         
         rans_dec dec;
         rans_dec_init(&dec, ptr, comp_tam);

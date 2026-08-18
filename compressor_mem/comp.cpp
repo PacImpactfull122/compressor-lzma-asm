@@ -23,13 +23,26 @@ int main(int argc, char** argv) {
     if (!f) { printf("erro ao abrir %s\n", argv[1]); return 1; }
 
     fseek(f, 0, SEEK_END);
-    u32 tam = (u32)ftell(f);
+    long tam_arq = ftell(f);
     fseek(f, 0, SEEK_SET);
+
+    // ! formato nao suporta arquivos maiores que quatro gigabytes, acima disso truncaria
+    if (tam_arq < 0 || tam_arq > (long)0xFFFFFF00) {
+        printf("arquivo grande demais: %ld bytes\n", tam_arq);
+        fclose(f);
+        return 1;
+    }
+    u32 tam = (u32)tam_arq;
 
     u8* dados = (u8*)malloc(tam);
     if (!dados) { printf("sem memoria\n"); fclose(f); return 1; }
 
-    fread(dados, 1, tam, f);
+    if (tam > 0 && fread(dados, 1, tam, f) != tam) {
+        printf("erro ao ler %s\n", argv[1]);
+        free(dados);
+        fclose(f);
+        return 1;
+    }
     fclose(f);
 
     auto comp = codec_comp(dados, tam, nivel);
@@ -48,11 +61,19 @@ int main(int argc, char** argv) {
     FILE* out = fopen(argv[2], "wb");
     if (!out) { printf("erro ao criar %s\n", argv[2]); return 1; }
 
-    fwrite(&h, sizeof(h), 1, out);
-    fwrite(comp.data(), 1, comp.size(), out);
+    // ! arquivo vazio gera stream sem dados, o descompressor trata normalmente
+    if (fwrite(&h, sizeof(h), 1, out) != 1 ||
+        (comp.size() > 0 && fwrite(comp.data(), 1, comp.size(), out) != comp.size())) {
+        printf("erro ao escrever %s\n", argv[2]);
+        fclose(out);
+        return 1;
+    }
     fclose(out);
 
-    printf("comprimido: %u -> %zu bytes (%.1f%%)\n",
-           tam, comp.size(), 100.0 * comp.size() / tam);
+    if (tam > 0)
+        printf("comprimido: %u -> %zu bytes (%.1f%%)\n",
+               tam, comp.size(), 100.0 * comp.size() / tam);
+    else
+        printf("comprimido: %u -> %zu bytes\n", tam, comp.size());
     return 0;
 }

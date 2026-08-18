@@ -118,6 +118,9 @@ std::vector<u8> huff_dec(const u8* dados, u32 tam) {
     memcpy(tam_bits, dados, 256);
     u32 tam_orig = (dados[256]<<24)|(dados[257]<<16)|(dados[258]<<8)|dados[259];
 
+    // ! tam_orig vem do stream, limitar para nao alocar demais
+    if (tam_orig == 0 || tam_orig > 64u * 1024u * 1024u) return {};
+
     // * reconstroi codigos canonicos identicos ao encoder
     u32 cnt[33] = {0};
     for (int i = 0; i < 256; i++)
